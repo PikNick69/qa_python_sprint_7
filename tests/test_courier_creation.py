@@ -1,6 +1,6 @@
 import allure
 import pytest
-from helpers import CourierDataGenerator, CourierMethods
+from helpers import CourierMethods
 from data import ErrorMessages
 
 @allure.epic("Управление курьерами")
@@ -20,9 +20,6 @@ class TestCourierCreation:
     @allure.title("Невозможно создать двух одинаковых курьеров")
     @allure.description("Проверка, что система не позволяет создать курьера с существующим логином")
     def test_create_duplicate_courier_fails(self, existing_courier):
-        with allure.step("Создать первого курьера через фикстуру"):
-            assert existing_courier, "Первый курьер не создан"
-        
         with allure.step("Попытаться создать курьера с таким же логином"):
             duplicate_payload = {
                 "login": existing_courier["login"],
@@ -38,11 +35,12 @@ class TestCourierCreation:
     @allure.title("Создание курьера с отсутствующим полем")
     @allure.description("Проверка, что нельзя создать курьера без обязательного поля")
     @pytest.mark.parametrize("missing_field", ["login", "password", "firstName"])
-    def test_create_courier_missing_field_fails(self, missing_field):
-        with allure.step(f"Создать данные курьера без поля {missing_field}"):
-            courier_data = CourierDataGenerator.generate_courier_data()
+    def test_create_courier_missing_field_fails(self, courier_data_with_cleanup, missing_field):
+        with allure.step(f"Удалить поле {missing_field} из данных"):
+            courier_data = courier_data_with_cleanup.copy()
             courier_data.pop(missing_field)
-            
+        
+        with allure.step("Отправить запрос на создание курьера с неполными данными"):
             response = CourierMethods.create_courier(courier_data)
         
         with allure.step("Проверить, что получили ошибку"):
